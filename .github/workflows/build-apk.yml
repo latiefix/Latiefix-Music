@@ -15,10 +15,8 @@ jobs:
         run: |
           rm -rf project
           mkdir -p project
-
           unzip -q Latiefix-Music-Android-v2.zip -d project
 
-          # Jika ZIP berisi folder pembungkus, pindahkan isinya ke root project
           if [ -d "project/latiefix_v2" ]; then
             shopt -s dotglob
             mv project/latiefix_v2/* project/
@@ -48,19 +46,19 @@ jobs:
         run: |
           yes | sdkmanager --licenses >/dev/null || true
 
-      - name: Install Gradle 9.6
+      - name: Install Gradle 9.6.0
         run: |
-          curl -fsSL -o /tmp/gradle.zip             https://services.gradle.org/distributions/gradle-9.6-bin.zip
+          curl -fsSL -o /tmp/gradle.zip             https://services.gradle.org/distributions/gradle-9.6.0-bin.zip
           unzip -q /tmp/gradle.zip -d /tmp
 
           echo "=== Gradle version ==="
-          /tmp/gradle-9.6/bin/gradle --version
+          /tmp/gradle-9.6.0/bin/gradle --version
 
       - name: Build APK
         working-directory: project
         run: |
           echo "=== Starting APK build ==="
-          /tmp/gradle-9.6/bin/gradle assembleDebug --no-daemon --stacktrace
+          /tmp/gradle-9.6.0/bin/gradle assembleDebug --no-daemon --stacktrace
 
       - name: Check APK
         run: |
