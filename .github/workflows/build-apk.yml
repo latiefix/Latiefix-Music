@@ -8,20 +8,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract project ZIP
+      - name: Extract Android project
         run: |
-          mkdir project
+          rm -rf project
+          mkdir -p project
+
           unzip -q Latiefix-Music-Android-v2.zip -d project
 
+          # Jika ZIP berisi folder pembungkus, pindahkan isinya ke root project
           if [ -d "project/latiefix_v2" ]; then
+            shopt -s dotglob
             mv project/latiefix_v2/* project/
-            mv project/latiefix_v2/.[!.]* project/ 2>/dev/null || true
+            rmdir project/latiefix_v2
           fi
 
-          echo "Project contents:"
+          echo "=== Project contents ==="
           ls -la project
 
       - name: Set up JDK 17
@@ -31,24 +35,38 @@ jobs:
           java-version: "17"
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: false
 
-      - name: Install Android SDK
+      - name: Install Android SDK packages
         run: |
-          sdkmanager "platform-tools" \
-            "platforms;android-36" \
-            "build-tools;36.0.0"
+          sdkmanager "platform-tools"             "platforms;android-36"             "build-tools;36.0.0"
+
+      - name: Accept Android SDK licenses
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
 
       - name: Install Gradle 9.6
         run: |
-          curl -fsSL -o /tmp/gradle.zip \
-            https://services.gradle.org/distributions/gradle-9.6-bin.zip
+          curl -fsSL -o /tmp/gradle.zip             https://services.gradle.org/distributions/gradle-9.6-bin.zip
           unzip -q /tmp/gradle.zip -d /tmp
+
+          echo "=== Gradle version ==="
+          /tmp/gradle-9.6/bin/gradle --version
 
       - name: Build APK
         working-directory: project
         run: |
-          /tmp/gradle-9.6/bin/gradle assembleDebug --no-daemon
+          echo "=== Starting APK build ==="
+          /tmp/gradle-9.6/bin/gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Check APK
+        run: |
+          echo "=== APK result ==="
+          ls -lh project/app/build/outputs/apk/debug/
+          test -f project/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
